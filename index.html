@@ -55,7 +55,7 @@
         input.category-title-input::placeholder { color: #a3e9d8; }
         
         /* === СТРОКА ВВОДА (ДЛЯ ДОХОДОВ И РАСХОДОВ) === */
-        .items-container { padding: 5px 15px 15px; }
+        .items-container { padding-bottom: 15px; }
         .item-row {
             display: flex; align-items: center; justify-content: space-between;
             padding: 12px 0; border-bottom: 1px solid #e9ecef;
@@ -70,23 +70,33 @@
         .item-inputs input[type="text"] { margin-bottom: 6px; }
         .item-inputs input::placeholder { color: #868e96; }
 
-        /* === КНОПКИ УПРАВЛЕНИЯ === */
+        /* === ИСПРАВЛЕННЫЕ КНОПКИ УДАЛЕНИЯ === */
         .remove-button {
             width: 40px; height: 40px;
-            font-size: 1.8em; font-weight: 300;
             cursor: pointer;
-            background-color: #f1f3f5; color: #868e96;
+            background-color: #f1f3f5;
             border: none; border-radius: 50%;
             flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            line-height: 1;
-            padding-bottom: 2px;
+            transition: background-color 0.2s ease;
         }
-        .remove-button:hover { background-color: #e9ecef; color: #495057; }
-        .remove-category-button { background: transparent; color: white; opacity: 0.8; }
-        .remove-category-button:hover { opacity: 1; }
+        .remove-button:hover { background-color: #e9ecef; }
+        .remove-button .icon-close {
+            width: 16px; height: 16px;
+            stroke: #868e96; stroke-width: 3;
+            transition: stroke 0.2s ease;
+        }
+        .remove-button:hover .icon-close { stroke: #495057; }
+        .remove-category-button {
+            background: transparent; opacity: 0.8;
+        }
+        .remove-category-button:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.15);
+        }
+        .remove-category-button .icon-close { stroke: white; }
 
         .add-item-button, .add-category-button {
             display: block; width: 100%;
@@ -98,7 +108,7 @@
         .add-item-button:hover, .add-category-button:hover { background-color: #e9ecef; border-color: #adb5bd; }
         .add-category-button { margin-top: 20px; }
 
-        /* === БЛОК УПРАВЛЕНИЯ (Расчет, Экспорт, Импорт) === */
+        /* === БЛОК УПРАВЛЕНИЯ (Экспорт, Импорт) === */
         .controls-section {
             background: #fff; padding: 20px; border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
@@ -108,7 +118,6 @@
             padding: 15px; font-size: 1.1em; font-weight: bold;
             border: none; border-radius: 10px; cursor: pointer;
         }
-        .calculate-btn { background-color: #28a745; color: white; }
         .export-btn { background-color: #6f42c1; color: white; }
         .import-btn { background-color: #6c757d; color: white; }
 
@@ -128,12 +137,63 @@
             background: #fff; padding: 15px; border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
+        
+        .chart-toggle-buttons {
+            display: flex; justify-content: center;
+            gap: 10px; margin: -5px 0 15px 0;
+        }
+        .toggle-btn {
+            padding: 8px 16px; font-size: 0.9em;
+            font-weight: bold; border: 2px solid #e9ecef;
+            border-radius: 20px; background-color: #f8f9fa;
+            color: #495057; cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .toggle-btn:hover { border-color: #adb5bd; }
+        .toggle-btn.active {
+            background-color: #20c997; color: white;
+            border-color: #20c997;
+        }
+
+        /* === СТИЛИ ПРОГРЕСС-БАРА В КАТЕГОРИИ === */
+        .progress-section { margin-top: 15px; }
+        .progress-control {
+            display: flex; align-items: center;
+            justify-content: flex-end; gap: 8px;
+            margin-bottom: 8px;
+        }
+        .progress-control label { font-size: 0.9em; color: #555; font-weight: bold; }
+        .category-progress-input {
+            width: 120px; font-size: 1em; text-align: right;
+            border: 1px solid #ced4da; border-radius: 8px; padding: 6px 10px;
+        }
+        .progress-bar {
+            width: 100%; height: 16px;
+            background-color: #e9ecef; border-radius: 8px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%; width: 0%;
+            background-color: #20c997; border-radius: 8px;
+            transition: width 0.4s ease, background-color 0.4s ease;
+        }
+        .progress-summary {
+            font-size: 0.9em; color: #868e96; text-align: right;
+            margin-top: 6px;
+        }
 
         /* === Адаптация для больших экранов === */
         @media (min-width: 768px) {
             body { padding: 25px; }
-            #charts-container { flex-direction: row; flex-wrap: wrap; justify-content: space-around; }
-            .chart-wrapper { flex-basis: 48%; }
+            #charts-container {
+                flex-direction: row; flex-wrap: wrap;
+                justify-content: center; /* Центрирование карточек */
+                gap: 20px; /* Расстояние между карточками */
+            }
+            .chart-wrapper {
+                flex-basis: 45%; /* Базовая ширина */
+                max-width: 380px; /* Максимальная ширина для эстетики */
+            }
         }
     </style>
 </head>
@@ -151,7 +211,7 @@
     <section class="budget-section">
         <h2>Доходы</h2>
         <div class="category-card">
-            <div id="income-items-container" class="items-container"></div>
+            <div id="income-items-container" class="items-container card-padded"></div>
             <button type="button" class="add-item-button" onclick="addIncomeRow()">+ Добавить доход</button>
         </div>
     </section>
@@ -164,7 +224,6 @@
     </section>
     
     <section class="controls-section">
-        <button type="button" class="control-button calculate-btn" onclick="calculateTotal(true)">Рассчитать итог</button>
         <button type="button" class="control-button export-btn" onclick="exportToCSV()">Скачать CSV</button>
         <button type="button" class="control-button import-btn" onclick="triggerCsvUpload()">Загрузить CSV</button>
         <input type="file" id="csvFileInput" onchange="importFromCSV(event)" accept=".csv" style="display: none;">
@@ -178,8 +237,18 @@
     </div>
 
     <div id="charts-container">
-        <div class="chart-wrapper"><h3>Доходы</h3><canvas id="incomeChart"></canvas></div>
-        <div class="chart-wrapper"><h3>Расходы</h3><canvas id="expenseChart"></canvas></div>
+        <div class="chart-wrapper">
+            <h3>Доходы</h3>
+            <canvas id="incomeChart"></canvas>
+        </div>
+        <div class="chart-wrapper">
+            <h3>Расходы</h3>
+            <div class="chart-toggle-buttons">
+                <button id="showActualBtn" class="toggle-btn active" onclick="setExpenseChartType('actual')">Реальные</button>
+                <button id="showPlannedBtn" class="toggle-btn" onclick="setExpenseChartType('planned')">Плановые</button>
+            </div>
+            <canvas id="expenseChart"></canvas>
+        </div>
     </div>
 </div>
 
@@ -188,13 +257,8 @@
     const expenseContainer = document.getElementById('expense-categories-container');
     const monthPicker = document.getElementById('budgetMonth');
     let incomeChartInstance, expenseChartInstance;
+    let currentExpenseChartType = 'actual';
 
-    // === ИЗМЕНЕНИЕ: Функции сохранения и загрузки данных из localStorage ===
-
-    /**
-     * Сохраняет текущие данные бюджета в localStorage.
-     * Ключ формируется на основе выбранного месяца (напр., 'budget-2025-09').
-     */
     function saveData() {
         const currentMonth = monthPicker.value;
         if (!currentMonth) return;
@@ -202,61 +266,59 @@
         localStorage.setItem(`budget-${currentMonth}`, JSON.stringify(data));
     }
 
-    /**
-     * Загружает данные для выбранного месяца из localStorage.
-     * Если данных нет, загружает шаблон по умолчанию.
-     */
     function loadMonthData() {
         const currentMonth = monthPicker.value;
         if (!currentMonth) return;
-
-        const savedData = localStorage.getItem(`budget-${currentMonth}`);
-
         incomeContainer.innerHTML = '';
         expenseContainer.innerHTML = '';
-
+        const savedData = localStorage.getItem(`budget-${currentMonth}`);
         if (savedData) {
             const data = JSON.parse(savedData);
-            // Восстанавливаем доходы
             data.incomes.forEach(item => incomeContainer.appendChild(createRow(item.name, 'income-amount', item.amount)));
-            // Восстанавливаем расходы
-            data.expenses.forEach(category => createCategory(category.name, category.items));
+            data.expenses.forEach(category => createCategory(category.name, category.items, category.progress));
+            calculateTotal(true); 
         } else {
             loadDefaultTemplate();
+            calculateTotal(true); 
         }
-        calculateTotal();
     }
     
-    /**
-     * Загружает стандартный набор категорий (для первого входа в месяце).
-     */
     function loadDefaultTemplate() {
-        ["Заработная плата", "Помощь от родителей"].forEach(name => {
-            incomeContainer.appendChild(createRow(name, 'income-amount'))
-        });
-        createCategory("Транспорт", [{name: "Такси"}, {name: "Общественный транспорт"}]);
-        createCategory("Еда", [{name: "Обеды"}, {name: "Продукты"}, {name: "Рестораны"}]);
-        createCategory("Жилье", [{name: "Коммунальные расходы"}, {name: "Бытовая химия"}]);
-        createCategory("Личные расходы", [{name: "Спорт"}, {name: "Развлечения"}]);
+        incomeContainer.appendChild(createRow("Аванс", 'income-amount', '30000'));
+        incomeContainer.appendChild(createRow("Основная зарплата", 'income-amount', '70000'));
+        incomeContainer.appendChild(createRow("Фриланс", 'income-amount', '15000'));
+        createCategory("Жильё и Коммунальные услуги", [{name: "Аренда квартиры", amount: "40000"},{name: "Электричество, вода", amount: "3500"},{name: "Интернет", amount: "600"},{name: "Мобильная связь", amount: "900"}],"44100");
+        createCategory("Продукты и Быт", [{name: "Покупки в супермаркете", amount: "22000"},{name: "Бытовая химия, мелочи", amount: "2000"}],"15450");
+        createCategory("Транспорт", [{name: "Проездной на метро/автобус", amount: "2500"},{name: "Такси (запас)", amount: "3000"}],"2500");
+        createCategory("Личные расходы и Хобби", [{name: "Спортзал", amount: "2500"},{name: "Книги и подписки", amount: "1000"},{name: "Кофе с собой", amount: "1500"}],"900");
+        createCategory("Кафе и Развлечения", [{name: "Ужин с друзьями", amount: "5000"},{name: "Кино / Театр", amount: "2000"}],"0");
     }
 
-    // === КОНЕЦ БЛОКА ИЗМЕНЕНИЙ ===
-
-
-    function createCategory(name, items = []) {
+    function createCategory(name, items = [], progress = "") {
         const categoryId = 'category-' + (performance.now() + '').replace('.', '-');
         const card = document.createElement('div');
         card.className = 'category-card';
         card.innerHTML = `
             <div class="category-header">
                 <input type="text" class="category-title-input" value="${name}" placeholder="Название категории">
-                <button type="button" class="remove-button remove-category-button" onclick="removeCategory(this)" title="Удалить категорию">&times;</button>
+                <button type="button" class="remove-button remove-category-button" onclick="removeCategory(this)" title="Удалить категорию">
+                    <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"></path><path d="M6 6L18 18"></path></svg>
+                </button>
             </div>
-            <div class="items-container" id="${categoryId}"></div>
-            <button type="button" class="add-item-button" onclick="addExpenseRow(this)">+ Добавить расход</button>
+            <div class="card-padded">
+                <div class="items-container" id="${categoryId}"></div>
+                <button type="button" class="add-item-button" onclick="addExpenseRow(this)">+ Добавить расход</button>
+                <div class="progress-section">
+                    <div class="progress-control">
+                        <label for="progress-${categoryId}">Потрачено:</label>
+                        <input type="number" id="progress-${categoryId}" class="category-progress-input" value="${progress}" placeholder="0.00" min="0" step="0.01">
+                    </div>
+                    <div class="progress-bar"><div class="progress-bar-fill"></div></div>
+                    <div class="progress-summary"><span class="current-spent">0.00</span> / <span class="limit-total">0.00</span></div>
+                </div>
+            </div>
         `;
         expenseContainer.appendChild(card);
-        
         const itemsContainer = card.querySelector(`#${categoryId}`);
         if (items && items.length > 0) {
             items.forEach(item => itemsContainer.appendChild(createRow(item.name, 'expense-amount', item.amount)));
@@ -271,20 +333,21 @@
                 <input type="text" value="${name}" placeholder="Название (напр., Такси)">
                 <input type="number" class="item-amount ${amountClass}" value="${amountValue}" placeholder="0.00" min="0" step="0.01">
             </div>
-            <button type="button" class="remove-button" onclick="removeRow(this)" title="Удалить строку">&times;</button>
+            <button type="button" class="remove-button" onclick="removeRow(this)" title="Удалить строку">
+                 <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"></path><path d="M6 6L18 18"></path></svg>
+            </button>
         `;
         return row;
     }
 
-    function addIncomeRow() { incomeContainer.appendChild(createRow("", "income-amount")); calculateTotal(); }
+    function addIncomeRow() { incomeContainer.appendChild(createRow("", "income-amount")); calculateTotal(true); }
     function addExpenseRow(button) {
-        const itemsContainer = button.previousElementSibling;
-        itemsContainer.appendChild(createRow("", 'expense-amount'));
-        calculateTotal();
+        button.closest('.card-padded').querySelector('.items-container').appendChild(createRow("", 'expense-amount'));
+        calculateTotal(true);
     }
-    function createNewCategory() { createCategory("Новая категория", [{name: "", amount: ""}]); calculateTotal(); }
-    function removeRow(button) { button.closest('.item-row').remove(); calculateTotal(); }
-    function removeCategory(button) { button.closest('.category-card').remove(); calculateTotal(); }
+    function createNewCategory() { createCategory("Новая категория", [{name: "", amount: ""}]); calculateTotal(true); }
+    function removeRow(button) { button.closest('.item-row').remove(); calculateTotal(true); }
+    function removeCategory(button) { button.closest('.category-card').remove(); calculateTotal(true); }
 
     function getCurrentDataAsObject() {
         const data = { incomes: [], expenses: [] };
@@ -295,13 +358,16 @@
         });
         document.querySelectorAll('#expense-categories-container .category-card').forEach(card => {
             const categoryName = card.querySelector('.category-title-input').value.trim();
+            const categoryProgress = card.querySelector('.category-progress-input').value;
             const items = [];
             card.querySelectorAll('.item-row').forEach(row => {
                 const name = row.querySelector('input[type="text"]').value.trim();
                 const amount = row.querySelector('.item-amount').value;
                 if (name || amount) items.push({ name, amount });
             });
-            if (categoryName) data.expenses.push({ name: categoryName, items });
+            if (categoryName || items.length > 0) { 
+                data.expenses.push({ name: categoryName, items, progress: categoryProgress });
+            }
         });
         return data;
     }
@@ -311,15 +377,14 @@
         if (!file) return;
         const dateMatch = file.name.match(/(\d{4}-\d{2})/);
         if (dateMatch && dateMatch[1]) { monthPicker.value = dateMatch[1]; }
-        
         const reader = new FileReader();
         reader.onload = function(e) {
             const lines = e.target.result.split('\n').filter(line => line.trim() !== '');
             const parsedData = { incomes: [], expenses: {} };
             for (let i = 1; i < lines.length; i++) {
-                const parts = lines[i].split(';');
+                const parts = lines[i].split(';').map(p => p.trim().replace(/"/g, ''));
                 if (parts.length < 4) continue;
-                const [type, category, name, amount] = parts.map(p => p.trim());
+                const [type, category, name, amount] = parts;
                 if (type === 'Доход') { parsedData.incomes.push({ name, amount }); }
                 else if (type === 'Расход') {
                     if (!parsedData.expenses[category]) parsedData.expenses[category] = [];
@@ -337,10 +402,6 @@
         event.target.value = '';
     }
 
-    /**
-     * ИЗМЕНЕНИЕ: Основная функция расчета теперь также вызывает сохранение данных.
-     * @param {boolean} forceSave - Флаг для принудительного сохранения (например, после импорта).
-     */
     function calculateTotal(forceSave = false) {
         let totalIncome = 0;
         const incomeDataForChart = { labels: [], data: [] };
@@ -355,18 +416,26 @@
         });
 
         let totalExpenses = 0;
-        const expenseDataForChart = { labels: [], data: [] };
+        const plannedExpenseDataForChart = { labels: [], data: [] };
+        const actualExpenseDataForChart = { labels: [], data: [] };
+        
         document.querySelectorAll('#expense-categories-container .category-card').forEach(card => {
-            let categoryTotal = 0;
+            let categoryLimitTotal = 0;
             card.querySelectorAll('.expense-amount').forEach(input => {
-                categoryTotal += parseFloat(input.value) || 0;
+                categoryLimitTotal += parseFloat(input.value) || 0;
             });
-            totalExpenses += categoryTotal;
-            if (categoryTotal > 0) {
-                const label = card.querySelector('.category-title-input').value || 'Без названия';
-                expenseDataForChart.labels.push(label);
-                expenseDataForChart.data.push(categoryTotal);
+            const currentSpent = parseFloat(card.querySelector('.category-progress-input').value) || 0;
+            totalExpenses += currentSpent;
+            const categoryLabel = card.querySelector('.category-title-input').value || 'Без названия';
+            if (categoryLimitTotal > 0) {
+                plannedExpenseDataForChart.labels.push(categoryLabel);
+                plannedExpenseDataForChart.data.push(categoryLimitTotal);
             }
+            if (currentSpent > 0) {
+                actualExpenseDataForChart.labels.push(categoryLabel);
+                actualExpenseDataForChart.data.push(currentSpent);
+            }
+            updateCategoryProgress(card, currentSpent, categoryLimitTotal);
         });
         
         const balance = totalIncome - totalExpenses;
@@ -376,19 +445,34 @@
         balanceSpan.innerText = balance.toFixed(2);
         balanceSpan.style.color = balance >= 0 ? '#28a745' : '#dc3545';
         
-        updateCharts(incomeDataForChart, expenseDataForChart);
-        
-        if (forceSave) {
-            saveData();
+        updateCharts(incomeDataForChart, plannedExpenseDataForChart, actualExpenseDataForChart);
+        if (forceSave) { saveData(); }
+    }
+
+    function updateCategoryProgress(card, currentSpent, limitTotal) {
+        const progressBarFill = card.querySelector('.progress-bar-fill');
+        const currentSpentSpan = card.querySelector('.current-spent');
+        const limitTotalSpan = card.querySelector('.limit-total');
+        currentSpentSpan.innerText = currentSpent.toFixed(2);
+        limitTotalSpan.innerText = limitTotal.toFixed(2);
+        if (limitTotal > 0) {
+            const percentage = (currentSpent / limitTotal) * 100;
+            progressBarFill.style.width = Math.min(percentage, 100) + '%';
+            if (percentage > 100) { progressBarFill.style.backgroundColor = '#dc3545'; } 
+            else if (percentage > 80) { progressBarFill.style.backgroundColor = '#fd7e14'; } 
+            else { progressBarFill.style.backgroundColor = '#20c997'; }
+        } else {
+            progressBarFill.style.width = '0%';
+            progressBarFill.style.backgroundColor = '#e9ecef';
         }
     }
 
     function exportToCSV() {
         const data = getCurrentDataAsObject();
-        let csvContent = "Тип;Категория;Статья;Сумма\n";
-        data.incomes.forEach(item => { csvContent += `Доход;;${item.name};${item.amount || 0}\n`; });
+        let csvContent = '"Тип";"Категория";"Статья";"Сумма"\n';
+        data.incomes.forEach(item => { csvContent += `"Доход";"";"${item.name}";"${item.amount || 0}"\n`; });
         data.expenses.forEach(category => {
-            category.items.forEach(item => { csvContent += `Расход;${category.name};${item.name};${item.amount || 0}\n`; });
+            category.items.forEach(item => { csvContent += `"Расход";"${category.name}";"${item.name}";"${item.amount || 0}"\n`; });
         });
         const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
@@ -401,44 +485,39 @@
 
     function triggerCsvUpload() { document.getElementById('csvFileInput').click(); }
 
-    function updateCharts(incomeData, expenseData) {
+    function setExpenseChartType(type) {
+        currentExpenseChartType = type;
+        document.getElementById('showActualBtn').classList.toggle('active', type === 'actual');
+        document.getElementById('showPlannedBtn').classList.toggle('active', type === 'planned');
+        calculateTotal(false);
+    }
+
+    function updateCharts(incomeData, plannedExpenseData, actualExpenseData) {
         const colors = ['#20c997', '#6f42c1', '#fd7e14', '#28a745', '#ffc107', '#dc3545', '#6c757d', '#0dcaf0'];
-        const chartOptions = {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: { legend: { position: 'top' } }
-        };
+        const chartOptions = { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top' } } };
+
         if (incomeChartInstance) incomeChartInstance.destroy();
         incomeChartInstance = new Chart(document.getElementById('incomeChart'), {
             type: 'pie', data: { labels: incomeData.labels, datasets: [{ data: incomeData.data, backgroundColor: colors }] },
             options: chartOptions
         });
+
+        const expenseDataToShow = currentExpenseChartType === 'planned' ? plannedExpenseData : actualExpenseData;
         if (expenseChartInstance) expenseChartInstance.destroy();
         expenseChartInstance = new Chart(document.getElementById('expenseChart'), {
-            type: 'pie', data: { labels: expenseData.labels, datasets: [{ data: expenseData.data, backgroundColor: colors }] },
+            type: 'pie', data: { labels: expenseDataToShow.labels, datasets: [{ data: expenseDataToShow.data, backgroundColor: colors }] },
             options: chartOptions
         });
     }
-
-    // === ИЗМЕНЕНИЕ: Обновленная логика инициализации ===
     
-    // Слушатель для смены месяца
     monthPicker.addEventListener('change', loadMonthData);
-
-    // Слушатель для автоматического сохранения при вводе данных
     document.querySelector('.container').addEventListener('input', () => calculateTotal(true));
 
-    // Первоначальная загрузка
     document.addEventListener('DOMContentLoaded', () => {
         const today = new Date();
         const year = today.getFullYear();
         const month = (today.getMonth() + 1).toString().padStart(2, '0');
-        
-        // Проверяем, был ли уже установлен месяц. Если нет (первый запуск), устанавливаем текущий.
-        if (!monthPicker.value) {
-            monthPicker.value = `${year}-${month}`;
-        }
-        
+        if (!monthPicker.value) { monthPicker.value = `${year}-${month}`; }
         loadMonthData();
     });
 </script>
