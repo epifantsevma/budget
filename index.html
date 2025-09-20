@@ -24,6 +24,10 @@
             background-color: var(--background-color); color: var(--text-color);
             -webkit-text-size-adjust: 100%; font-size: 16px;
         }
+        /* === ИЗМЕНЕНИЕ: Класс для блокировки скролла === */
+        body.modal-open {
+            overflow: hidden;
+        }
         .container { max-width: 600px; margin: 0 auto; }
         h2, h3 { text-align: center; }
         h2 { font-size: 1.6em; font-weight: 600; margin: 0 0 20px 0; }
@@ -52,9 +56,7 @@
         input.category-title-input::placeholder { color: rgba(255,255,255,0.7); }
         
         .items-container {
-            max-height: 190px;
-            overflow-y: auto;
-            padding-right: 10px;
+            max-height: 190px; overflow-y: auto; padding-right: 10px;
         }
         .items-container::-webkit-scrollbar { width: 6px; }
         .items-container::-webkit-scrollbar-track { background: transparent; }
@@ -112,13 +114,7 @@
         #summary-balance.negative { color: var(--danger-color); }
         #charts-container { display: flex; flex-direction: column; gap: 20px; margin-top: 25px; }
         
-        /* === ИСПРАВЛЕНИЕ: Контейнер для диаграммы с фиксированной высотой === */
-        .chart-container {
-            position: relative;
-            height: 250px; /* Задаем жесткую высоту */
-            width: 100%;
-        }
-
+        .chart-container { position: relative; height: 250px; width: 100%; }
         .chart-toggle-buttons { display: flex; justify-content: center; gap: 10px; margin: -5px 0 15px 0; }
         .toggle-btn {
             padding: 8px 18px; font-size: 0.9em; font-weight: 600;
@@ -148,10 +144,12 @@
         .progress-bar-fill { height: 100%; width: 0%; background-color: var(--primary-color); border-radius: 6px; transition: var(--transition); }
         .progress-summary { font-size: 0.9em; color: var(--text-color-light); text-align: right; margin-top: 8px; font-weight: 500;}
 
+        /* === ИЗМЕНЕНИЕ: Позиционирование модального окна === */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); z-index: 1000;
-            display: flex; align-items: center; justify-content: center;
+            display: flex; align-items: flex-start; /* Вверх */
+            justify-content: center; padding-top: 10vh; /* Отступ сверху */
             opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
         }
         .modal-overlay.visible { opacity: 1; pointer-events: auto; }
@@ -180,13 +178,18 @@
             body { padding: 25px; }
             #charts-container { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 25px; }
             .chart-wrapper { flex-basis: 45%; max-width: 400px; }
+             /* На десктопе возвращаем центрирование */
+            .modal-overlay { align-items: center; padding-top: 0; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <section class="card"> <input type="month" id="budgetMonth" class="month-picker"> </section>
+    <!-- ИЗМЕНЕНИЕ: Выравнивание по центру -->
+    <section class="card" style="text-align: center;">
+        <input type="month" id="budgetMonth" class="month-picker">
+    </section>
     <section>
         <h2>Доходы</h2>
         <div class="card">
@@ -304,10 +307,22 @@
         return row;
     }
     
-    function closeModal() { modal.classList.remove('visible'); currentElement = null; }
+    function closeModal() {
+        modal.classList.remove('visible');
+        document.body.classList.remove('modal-open');
+        currentElement = null;
+    }
+
+    function handleModalEnter(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            modalConfirmBtn.click();
+        }
+    }
 
     function openSpentModal(element, mode) {
         currentElement = element.closest('.card');
+        document.body.classList.add('modal-open');
         const categoryName = currentElement.querySelector('.category-title-input').value || 'Без названия';
         
         modalBody.innerHTML = `<input type="number" id="modal-input-amount" class="modal-input" placeholder="0" min="0" step="1">`;
@@ -323,7 +338,9 @@
             modalConfirmBtn.innerText = 'Добавить';
         }
         modal.classList.add('visible');
-        document.getElementById('modal-input-amount').focus();
+        const input = document.getElementById('modal-input-amount');
+        input.focus();
+        input.addEventListener('keydown', handleModalEnter);
     }
 
     function confirmSpentAction() {
@@ -343,6 +360,7 @@
 
     function openItemModal(row) {
         currentElement = row;
+        document.body.classList.add('modal-open');
         modalTitle.innerText = "Изменить запись";
         modalBody.innerHTML = `
             <div class="modal-input-group">
@@ -353,7 +371,12 @@
         modalConfirmBtn.innerText = 'Сохранить';
         modalConfirmBtn.onclick = confirmItemEdit;
         modal.classList.add('visible');
-        document.getElementById('modal-input-name').focus();
+        
+        const nameInput = document.getElementById('modal-input-name');
+        const amountInput = document.getElementById('modal-input-amount');
+        nameInput.focus();
+        nameInput.addEventListener('keydown', handleModalEnter);
+        amountInput.addEventListener('keydown', handleModalEnter);
     }
 
     function confirmItemEdit() {
