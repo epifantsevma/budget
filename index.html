@@ -20,12 +20,15 @@
         h3 { font-size: 1.2em; color: #555; }
         
         /* === ВЫБОР МЕСЯЦА === */
-        .month-picker-wrapper { margin-bottom: 25px; }
         .month-picker {
-            font-family: inherit; font-size: 1.5em; font-weight: bold;
-            padding: 12px; border: 2px solid #ced4da; border-radius: 12px;
+            font-family: inherit; font-size: 1.3em; font-weight: bold;
+            padding: 10px; border-radius: 12px;
             cursor: pointer; width: 100%; text-align: center;
+            border: none;
+            background-color: #f8f9fa;
+            color: #333;
         }
+        .month-picker:focus { outline: 2px solid #20c997; }
         
         /* === ОСНОВНЫЕ СЕКЦИИ === */
         .budget-section { margin-bottom: 25px; }
@@ -35,6 +38,9 @@
             background-color: #fff; border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             margin-bottom: 20px; overflow: hidden;
+        }
+        .card-padded {
+            padding: 15px;
         }
         .category-header {
             display: flex; align-items: center; justify-content: space-between;
@@ -65,7 +71,6 @@
         .item-inputs input::placeholder { color: #868e96; }
 
         /* === КНОПКИ УПРАВЛЕНИЯ === */
-        /* ИЗМЕНЕНИЕ: Улучшено центрирование крестика и симметрия кнопки */
         .remove-button {
             width: 40px; height: 40px;
             font-size: 1.8em; font-weight: 300;
@@ -73,12 +78,11 @@
             background-color: #f1f3f5; color: #868e96;
             border: none; border-radius: 50%;
             flex-shrink: 0;
-            /* Flexbox для идеального центрирования */
             display: flex;
             align-items: center;
             justify-content: center;
-            line-height: 1; /* Убираем лишнюю высоту строки */
-            padding-bottom: 2px; /* Оптическая коррекция для символа "×" */
+            line-height: 1;
+            padding-bottom: 2px;
         }
         .remove-button:hover { background-color: #e9ecef; color: #495057; }
         .remove-category-button { background: transparent; color: white; opacity: 0.8; }
@@ -128,10 +132,6 @@
         /* === Адаптация для больших экранов === */
         @media (min-width: 768px) {
             body { padding: 25px; }
-            .month-picker { width: auto; display: inline-block; }
-            .month-picker-wrapper { text-align: center; }
-            .controls-section { flex-direction: row; }
-            .control-button { flex: 1; }
             #charts-container { flex-direction: row; flex-wrap: wrap; justify-content: space-around; }
             .chart-wrapper { flex-basis: 48%; }
         }
@@ -140,9 +140,12 @@
 <body>
 
 <div class="container">
-    <div class="month-picker-wrapper">
-        <input type="month" id="budgetMonth" class="month-picker">
-    </div>
+    
+    <section class="budget-section">
+        <div class="category-card card-padded">
+            <input type="month" id="budgetMonth" class="month-picker">
+        </div>
+    </section>
 
     <!-- СЕКЦИЯ ДОХОДОВ -->
     <section class="budget-section">
@@ -160,15 +163,13 @@
         <button type="button" class="add-category-button" onclick="createNewCategory()">+ Добавить категорию</button>
     </section>
     
-    <!-- БЛОК УПРАВЛЕНИЯ -->
     <section class="controls-section">
-        <button type="button" class="control-button calculate-btn" onclick="calculateTotal()">Рассчитать итог</button>
+        <button type="button" class="control-button calculate-btn" onclick="calculateTotal(true)">Рассчитать итог</button>
         <button type="button" class="control-button export-btn" onclick="exportToCSV()">Скачать CSV</button>
         <button type="button" class="control-button import-btn" onclick="triggerCsvUpload()">Загрузить CSV</button>
         <input type="file" id="csvFileInput" onchange="importFromCSV(event)" accept=".csv" style="display: none;">
     </section>
 
-    <!-- БЛОК РЕЗУЛЬТАТОВ -->
     <div class="results">
         <h3>Сводка</h3>
         <p><strong>Общий доход:</strong> <span id="summary-income">0.00</span></p>
@@ -176,7 +177,6 @@
         <p><strong>Остаток:</strong> <span id="summary-balance">0.00</span></p>
     </div>
 
-    <!-- СЕКЦИЯ ДИАГРАММ -->
     <div id="charts-container">
         <div class="chart-wrapper"><h3>Доходы</h3><canvas id="incomeChart"></canvas></div>
         <div class="chart-wrapper"><h3>Расходы</h3><canvas id="expenseChart"></canvas></div>
@@ -189,9 +189,62 @@
     const monthPicker = document.getElementById('budgetMonth');
     let incomeChartInstance, expenseChartInstance;
 
-    // ОБНОВЛЕНИЕ: Функции создания элементов под новую верстку
+    // === ИЗМЕНЕНИЕ: Функции сохранения и загрузки данных из localStorage ===
+
+    /**
+     * Сохраняет текущие данные бюджета в localStorage.
+     * Ключ формируется на основе выбранного месяца (напр., 'budget-2025-09').
+     */
+    function saveData() {
+        const currentMonth = monthPicker.value;
+        if (!currentMonth) return;
+        const data = getCurrentDataAsObject();
+        localStorage.setItem(`budget-${currentMonth}`, JSON.stringify(data));
+    }
+
+    /**
+     * Загружает данные для выбранного месяца из localStorage.
+     * Если данных нет, загружает шаблон по умолчанию.
+     */
+    function loadMonthData() {
+        const currentMonth = monthPicker.value;
+        if (!currentMonth) return;
+
+        const savedData = localStorage.getItem(`budget-${currentMonth}`);
+
+        incomeContainer.innerHTML = '';
+        expenseContainer.innerHTML = '';
+
+        if (savedData) {
+            const data = JSON.parse(savedData);
+            // Восстанавливаем доходы
+            data.incomes.forEach(item => incomeContainer.appendChild(createRow(item.name, 'income-amount', item.amount)));
+            // Восстанавливаем расходы
+            data.expenses.forEach(category => createCategory(category.name, category.items));
+        } else {
+            loadDefaultTemplate();
+        }
+        calculateTotal();
+    }
+    
+    /**
+     * Загружает стандартный набор категорий (для первого входа в месяце).
+     */
+    function loadDefaultTemplate() {
+        ["Заработная плата", "Помощь от родителей"].forEach(name => {
+            incomeContainer.appendChild(createRow(name, 'income-amount'))
+        });
+        createCategory("Транспорт", [{name: "Такси"}, {name: "Общественный транспорт"}]);
+        createCategory("Еда", [{name: "Обеды"}, {name: "Продукты"}, {name: "Рестораны"}]);
+        createCategory("Жилье", [{name: "Коммунальные расходы"}, {name: "Бытовая химия"}]);
+        createCategory("Личные расходы", [{name: "Спорт"}, {name: "Развлечения"}]);
+    }
+
+    // === КОНЕЦ БЛОКА ИЗМЕНЕНИЙ ===
+
+
     function createCategory(name, items = []) {
-        const categoryId = 'category-' + (performance.now() + '').replace('.', '-'); // Уникальный ID
+        const categoryId = 'category-' + (performance.now() + '').replace('.', '-');
         const card = document.createElement('div');
         card.className = 'category-card';
         card.innerHTML = `
@@ -202,9 +255,9 @@
             <div class="items-container" id="${categoryId}"></div>
             <button type="button" class="add-item-button" onclick="addExpenseRow(this)">+ Добавить расход</button>
         `;
-        expenseContainer.appendChild(card); // Сначала добавляем карточку в DOM
+        expenseContainer.appendChild(card);
         
-        const itemsContainer = card.querySelector(`#${categoryId}`); // Потом ищем в ней контейнер
+        const itemsContainer = card.querySelector(`#${categoryId}`);
         if (items && items.length > 0) {
             items.forEach(item => itemsContainer.appendChild(createRow(item.name, 'expense-amount', item.amount)));
         }
@@ -223,37 +276,22 @@
         return row;
     }
 
-    function addIncomeRow() { incomeContainer.appendChild(createRow("", "income-amount")); }
+    function addIncomeRow() { incomeContainer.appendChild(createRow("", "income-amount")); calculateTotal(); }
     function addExpenseRow(button) {
         const itemsContainer = button.previousElementSibling;
         itemsContainer.appendChild(createRow("", 'expense-amount'));
-    }
-    // ИЗМЕНЕНИЕ: Функция для добавления категории теперь создает одну пустую строку по умолчанию.
-    function createNewCategory() { createCategory("", [{name: "", amount: ""}]); }
-    function removeRow(button) { button.closest('.item-row').remove(); }
-    function removeCategory(button) { button.closest('.category-card').remove(); }
-
-    function resetAndLoadTemplate() {
-        incomeContainer.innerHTML = '';
-        expenseContainer.innerHTML = '';
-        
-        ["Заработная плата", "Помощь от родителей"].forEach(name => {
-            incomeContainer.appendChild(createRow(name, 'income-amount'))
-        });
-        createCategory("Транспорт", [{name: "Такси"}, {name: "Общественный транспорт"}]);
-        createCategory("Еда", [{name: "Обеды"}, {name: "Продукты"}, {name: "Рестораны"}]);
-        createCategory("Жилье", [{name: "Коммунальные расходы"}, {name: "Бытовая химия"}]);
-        createCategory("Личные расходы", [{name: "Спорт"}, {name: "Развлечения"}]);
-        
         calculateTotal();
     }
-    
+    function createNewCategory() { createCategory("Новая категория", [{name: "", amount: ""}]); calculateTotal(); }
+    function removeRow(button) { button.closest('.item-row').remove(); calculateTotal(); }
+    function removeCategory(button) { button.closest('.category-card').remove(); calculateTotal(); }
+
     function getCurrentDataAsObject() {
         const data = { incomes: [], expenses: [] };
         document.querySelectorAll('#income-items-container .item-row').forEach(row => {
             const name = row.querySelector('input[type="text"]').value.trim();
             const amount = row.querySelector('.item-amount').value;
-            if (name) data.incomes.push({ name, amount });
+            if (name || amount) data.incomes.push({ name, amount });
         });
         document.querySelectorAll('#expense-categories-container .category-card').forEach(card => {
             const categoryName = card.querySelector('.category-title-input').value.trim();
@@ -261,9 +299,9 @@
             card.querySelectorAll('.item-row').forEach(row => {
                 const name = row.querySelector('input[type="text"]').value.trim();
                 const amount = row.querySelector('.item-amount').value;
-                if (name) items.push({ name, amount });
+                if (name || amount) items.push({ name, amount });
             });
-            if (categoryName && items.length > 0) data.expenses.push({ name: categoryName, items });
+            if (categoryName) data.expenses.push({ name: categoryName, items });
         });
         return data;
     }
@@ -273,6 +311,7 @@
         if (!file) return;
         const dateMatch = file.name.match(/(\d{4}-\d{2})/);
         if (dateMatch && dateMatch[1]) { monthPicker.value = dateMatch[1]; }
+        
         const reader = new FileReader();
         reader.onload = function(e) {
             const lines = e.target.result.split('\n').filter(line => line.trim() !== '');
@@ -291,14 +330,18 @@
             expenseContainer.innerHTML = '';
             parsedData.incomes.forEach(item => incomeContainer.appendChild(createRow(item.name, 'income-amount', item.amount)));
             for (const categoryName in parsedData.expenses) { createCategory(categoryName, parsedData.expenses[categoryName]); }
-            calculateTotal();
+            calculateTotal(true);
         };
         reader.onerror = () => alert('Ошибка при чтении файла.');
         reader.readAsText(file);
         event.target.value = '';
     }
 
-    function calculateTotal() {
+    /**
+     * ИЗМЕНЕНИЕ: Основная функция расчета теперь также вызывает сохранение данных.
+     * @param {boolean} forceSave - Флаг для принудительного сохранения (например, после импорта).
+     */
+    function calculateTotal(forceSave = false) {
         let totalIncome = 0;
         const incomeDataForChart = { labels: [], data: [] };
         document.querySelectorAll('.income-amount').forEach(input => {
@@ -334,6 +377,10 @@
         balanceSpan.style.color = balance >= 0 ? '#28a745' : '#dc3545';
         
         updateCharts(incomeDataForChart, expenseDataForChart);
+        
+        if (forceSave) {
+            saveData();
+        }
     }
 
     function exportToCSV() {
@@ -373,12 +420,26 @@
         });
     }
 
+    // === ИЗМЕНЕНИЕ: Обновленная логика инициализации ===
+    
+    // Слушатель для смены месяца
+    monthPicker.addEventListener('change', loadMonthData);
+
+    // Слушатель для автоматического сохранения при вводе данных
+    document.querySelector('.container').addEventListener('input', () => calculateTotal(true));
+
+    // Первоначальная загрузка
     document.addEventListener('DOMContentLoaded', () => {
         const today = new Date();
         const year = today.getFullYear();
         const month = (today.getMonth() + 1).toString().padStart(2, '0');
-        monthPicker.value = `${year}-${month}`;
-        resetAndLoadTemplate();
+        
+        // Проверяем, был ли уже установлен месяц. Если нет (первый запуск), устанавливаем текущий.
+        if (!monthPicker.value) {
+            monthPicker.value = `${year}-${month}`;
+        }
+        
+        loadMonthData();
     });
 </script>
 
