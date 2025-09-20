@@ -6,19 +6,26 @@
     <title>Калькулятор бюджета</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        /* ИЗМЕНЕНИЕ: Глобальное правило для предсказуемой блочной модели */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            margin: 0; padding: 10px;
+            /* ИЗМЕНЕНИЕ: Увеличен отступ для лучшего вида на мобильных */
+            margin: 0; padding: 15px;
             background-color: #f4f4f4; color: #333;
             -webkit-text-size-adjust: 100%;
         }
         .container { max-width: 900px; margin: 0 auto; }
+        /* ИЗМЕНЕНИЕ: Добавлено центрирование для элемента выбора месяца */
         h1 { text-align: center; margin-bottom: 20px; }
         .month-picker {
             font-family: inherit; font-size: 1.4em;
             font-weight: bold; padding: 10px 15px;
             border: 2px solid #ccc; border-radius: 8px; cursor: pointer;
             width: 100%;
+            /* ИЗМЕНЕНИЕ: box-sizing уже глобальный, но здесь он важен */
             box-sizing: border-box;
         }
         h2 { text-align: center; }
@@ -33,6 +40,10 @@
             text-align: left; vertical-align: middle;
             font-size: 1em;
         }
+        /* ИЗМЕНЕНИЕ: Управляем шириной колонок для предотвращения "схлопывания" на узких экранах */
+        td:nth-child(2) { width: 110px; } /* Колонка с суммой */
+        td:nth-child(3) { width: 50px; text-align: center; } /* Колонка с кнопкой удаления */
+
         th.category-header {
             background-color: #20c997;
             color: white; font-size: 1.1em; position: relative;
@@ -42,8 +53,9 @@
             border: none; font-size: 1em; font-weight: bold;
         }
         input.category-title-input::placeholder { color: #cce5ff; }
+        /* ИЗМЕНЕНИЕ: Ширина 100% и увеличенный padding для удобства */
         input[type="text"], input[type="number"] {
-            width: 95%; padding: 12px 8px;
+            width: 100%; padding: 12px 10px;
             border: 1px solid #ccc; border-radius: 4px; font-size: 1em;
         }
         .button-group { display: flex; flex-direction: column; gap: 10px; }
@@ -54,7 +66,6 @@
             color: white;
             border: none; border-radius: 8px; cursor: pointer; font-size: 1.1em;
             font-weight: bold; text-align: center;
-            box-sizing: border-box;
         }
         .main-button { background-color: #28a745; }
         .main-button:hover { background-color: #218838; }
@@ -68,14 +79,16 @@
             padding: 8px 12px; font-size: 1em; cursor: pointer;
             background-color: #20c997;
             color: white; border: none; border-radius: 5px; width: 100%;
-            box-sizing: border-box; margin-top: 5px;
+            margin-top: 5px;
         }
         .add-row-button:hover { background-color: #1aa080; }
+        /* ИЗМЕНЕНИЕ: Увеличен размер для удобного нажатия пальцем */
         .remove-button {
-            width: 36px; height: 36px; font-size: 1.5em;
+            width: 40px; height: 40px; font-size: 1.5em;
             line-height: 1; cursor: pointer;
             background-color: #ced4da; color: #495057;
             border: 1px solid #adb5bd; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; /* Для лучшего центрирования крестика */
         }
         .remove-button:hover { background-color: #adb5bd; }
         .remove-category-button { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); }
@@ -94,7 +107,6 @@
         .chart-wrapper {
             background: #fff; padding: 15px; border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.05); width: 100%; max-width: none;
-            box-sizing: border-box;
         }
         .chart-wrapper h3 { text-align: center; margin-top: 0; }
 
