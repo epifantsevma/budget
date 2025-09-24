@@ -24,13 +24,12 @@
             background-color: var(--background-color); color: var(--text-color);
             -webkit-text-size-adjust: 100%; font-size: 16px;
         }
-        /* === ИЗМЕНЕНИЕ: Класс для блокировки скролла === */
         body.modal-open {
             overflow: hidden;
         }
         .container { max-width: 600px; margin: 0 auto; }
         h2, h3 { text-align: center; }
-        h2 { font-size: 1.6em; font-weight: 600; margin: 0 0 20px 0; }
+        h2 { font-size: 1.6em; font-weight: 600; margin: 20px 0; }
         h3 { font-size: 1.3em; font-weight: 600; margin: 0 0 15px 0; }
         .card {
             background-color: var(--card-color); border-radius: var(--radius-large);
@@ -41,8 +40,10 @@
         .month-picker {
             font-family: inherit; font-size: 1.4em; font-weight: 600;
             padding: 12px; border-radius: var(--radius-medium); cursor: pointer;
-            width: 100%; text-align: center; border: none;
+            width: 100%; text-align: center; border: 1px solid var(--border-color);
             background-color: var(--card-color); color: var(--text-color);
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
         }
         .month-picker:focus { outline: 2px solid var(--primary-color); }
         .category-header {
@@ -112,6 +113,11 @@
         #summary-balance { font-size: 1.3em; font-weight: 600; }
         #summary-balance.positive { color: var(--primary-color); }
         #summary-balance.negative { color: var(--danger-color); }
+
+        .planned-neutral { color: var(--gray-color); font-weight: 600; }
+        .planned-good { color: var(--success-color); font-weight: 600; }
+        .planned-bad { color: var(--danger-color); font-weight: 600; }
+        
         #charts-container { display: flex; flex-direction: column; gap: 20px; margin-top: 25px; }
         
         .chart-container { position: relative; height: 250px; width: 100%; }
@@ -144,12 +150,11 @@
         .progress-bar-fill { height: 100%; width: 0%; background-color: var(--primary-color); border-radius: 6px; transition: var(--transition); }
         .progress-summary { font-size: 0.9em; color: var(--text-color-light); text-align: right; margin-top: 8px; font-weight: 500;}
 
-        /* === ИЗМЕНЕНИЕ: Позиционирование модального окна === */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); z-index: 1000;
-            display: flex; align-items: flex-start; /* Вверх */
-            justify-content: center; padding-top: 10vh; /* Отступ сверху */
+            display: flex; align-items: flex-start;
+            justify-content: center; padding-top: 10vh;
             opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
         }
         .modal-overlay.visible { opacity: 1; pointer-events: auto; }
@@ -178,7 +183,6 @@
             body { padding: 25px; }
             #charts-container { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 25px; }
             .chart-wrapper { flex-basis: 45%; max-width: 400px; }
-             /* На десктопе возвращаем центрирование */
             .modal-overlay { align-items: center; padding-top: 0; }
         }
     </style>
@@ -186,10 +190,9 @@
 <body>
 
 <div class="container">
-    <!-- ИЗМЕНЕНИЕ: Выравнивание по центру -->
-    <section class="card" style="text-align: center;">
-        <input type="month" id="budgetMonth" class="month-picker">
-    </section>
+    
+    <input type="month" id="budgetMonth" class="month-picker">
+
     <section>
         <h2>Доходы</h2>
         <div class="card">
@@ -211,12 +214,15 @@
         <button type="button" class="control-button import-btn" onclick="triggerCsvUpload()">Загрузить CSV</button>
         <input type="file" id="csvFileInput" onchange="importFromCSV(event)" accept=".csv" style="display: none;">
     </section>
+    
     <div class="results card card-padded">
         <h3>Сводка</h3>
         <p><strong>Общий доход:</strong> <span id="summary-income">0</span></p>
-        <p><strong>Общий расход:</strong> <span id="summary-expenses">0</span></p>
+        <p><strong>Запланированный расход:</strong> <span id="summary-planned-expenses">0</span></p>
+        <p><strong>Фактический расход:</strong> <span id="summary-expenses">0</span></p>
         <p><strong>Остаток:</strong> <span id="summary-balance" class="positive">0</span></p>
     </div>
+
     <div id="charts-container">
         <div class="chart-wrapper card card-padded">
             <h3>Расходы</h3>
@@ -437,15 +443,24 @@
                 incomeDataForChart.data.push(amount);
             }
         });
-        let totalExpenses = 0;
+
+        let totalActualExpenses = 0;
+        let totalPlannedExpenses = 0;
         const plannedExpenseDataForChart = { labels: [], data: [] };
         const actualExpenseDataForChart = { labels: [], data: [] };
+
         document.querySelectorAll('#expense-categories-container .card').forEach(card => {
             let categoryLimitTotal = 0;
-            card.querySelectorAll('.item-row').forEach(row => { categoryLimitTotal += parseInt(row.dataset.amount) || 0; });
+            card.querySelectorAll('.item-row').forEach(row => { 
+                categoryLimitTotal += parseInt(row.dataset.amount) || 0; 
+            });
+            
+            totalPlannedExpenses += categoryLimitTotal;
+
             const currentSpent = parseInt(card.querySelector('.category-progress-input').value) || 0;
-            totalExpenses += currentSpent;
+            totalActualExpenses += currentSpent;
             const categoryLabel = card.querySelector('.category-title-input').value || 'Без названия';
+
             if (categoryLimitTotal > 0) {
                 plannedExpenseDataForChart.labels.push(categoryLabel);
                 plannedExpenseDataForChart.data.push(categoryLimitTotal);
@@ -456,12 +471,27 @@
             }
             updateCategoryProgress(card, currentSpent, categoryLimitTotal);
         });
-        const balance = totalIncome - totalExpenses;
+
+        const balance = totalIncome - totalActualExpenses;
+
         document.getElementById('summary-income').innerText = totalIncome;
-        document.getElementById('summary-expenses').innerText = totalExpenses;
+        document.getElementById('summary-expenses').innerText = totalActualExpenses;
+        
+        const plannedExpensesSpan = document.getElementById('summary-planned-expenses');
+        plannedExpensesSpan.innerText = totalPlannedExpenses;
+        plannedExpensesSpan.className = '';
+        if (totalPlannedExpenses > totalIncome) {
+            plannedExpensesSpan.classList.add('planned-bad');
+        } else if (totalPlannedExpenses < totalIncome && totalPlannedExpenses > 0) {
+            plannedExpensesSpan.classList.add('planned-good');
+        } else {
+            plannedExpensesSpan.classList.add('planned-neutral');
+        }
+        
         const balanceSpan = document.getElementById('summary-balance');
         balanceSpan.innerText = balance;
         balanceSpan.className = balance >= 0 ? 'positive' : 'negative';
+
         updateCharts(incomeDataForChart, plannedExpenseDataForChart, actualExpenseDataForChart);
         if (forceSave) saveData();
     }
@@ -512,52 +542,122 @@
         const s = localStorage.getItem(`budget-${c}`);
         if (s) {
             const d = JSON.parse(s);
-            d.incomes.forEach(i => incomeContainer.appendChild(createRow('income', i.name, i.amount)));
-            d.expenses.forEach(c => createCategory(c.name, c.items, c.progress));
+            if (d.incomes) d.incomes.forEach(i => incomeContainer.appendChild(createRow('income', i.name, i.amount)));
+            if (d.expenses) d.expenses.forEach(c => createCategory(c.name, c.items, c.progress));
         }
         calculateTotal(false);
     }
     
+    // ИЗМЕНЕННАЯ ФУНКЦИЯ
     function importFromCSV(event) {
         const file = event.target.files[0]; if (!file) return;
-        const dateMatch = file.name.match(/(\d{4}-\d{2})/);
-        if (dateMatch && dateMatch[1]) { monthPicker.value = dateMatch[1]; }
+
+        // <-- НОВЫЙ БЛОК: Запрос подтверждения перед удалением
+        if (!confirm('Вы уверены? Все существующие данные на сайте будут стерты и заменены данными из файла.')) { 
+            event.target.value = ''; // Сбрасываем input, чтобы можно было выбрать тот же файл снова
+            return; 
+        }
+        // --> КОНЕЦ НОВОГО БЛОКА
+
         const reader = new FileReader();
         reader.onload = function(e) {
-            const lines = e.target.result.split('\n').filter(line => line.trim() !== '');
-            const parsedData = { incomes: [], expenses: {} };
-            for (let i = 1; i < lines.length; i++) {
-                const parts = lines[i].split(';').map(p => p.trim().replace(/"/g, ''));
-                if (parts.length < 4) continue;
-                const [type, category, name, amount] = parts;
-                if (type === 'Доход') parsedData.incomes.push({ name, amount });
-                else if (type === 'Расход') {
-                    if (!parsedData.expenses[category]) parsedData.expenses[category] = { items: [], progress: "0" };
-                    parsedData.expenses[category].items.push({ name, amount });
+            
+            // <-- НОВЫЙ БЛОК: Очистка localStorage
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('budget-')) {
+                    keysToRemove.push(key);
                 }
             }
-            incomeContainer.innerHTML = ''; expenseContainer.innerHTML = '';
-            parsedData.incomes.forEach(item => incomeContainer.appendChild(createRow('income', item.name, item.amount)));
-            for (const categoryName in parsedData.expenses) {
-                createCategory(categoryName, parsedData.expenses[categoryName].items, parsedData.expenses[categoryName].progress);
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+            // --> КОНЕЦ НОВОГО БЛОКА
+
+            const lines = e.target.result.split('\n').filter(line => line.trim() !== '');
+            const dataByMonth = {};
+            for (let i = 1; i < lines.length; i++) {
+                const parts = lines[i].split(';').map(p => p.trim().replace(/"/g, ''));
+                if (parts.length < 5) continue;
+                const [month, type, category, name, amount] = parts;
+                if (!month || !/^\d{4}-\d{2}$/.test(month)) continue;
+                if (!dataByMonth[month]) {
+                    dataByMonth[month] = { incomes: [], expenses: {} };
+                }
+                if (type === 'Доход') {
+                    dataByMonth[month].incomes.push({ name, amount });
+                } else if (type === 'Расход') {
+                    if (!dataByMonth[month].expenses[category]) {
+                        dataByMonth[month].expenses[category] = { items: [], progress: "0" };
+                    }
+                    dataByMonth[month].expenses[category].items.push({ name, amount });
+                } else if (type === 'Трата') {
+                    if (!dataByMonth[month].expenses[category]) {
+                        dataByMonth[month].expenses[category] = { items: [], progress: "0" };
+                    }
+                    dataByMonth[month].expenses[category].progress = amount;
+                }
             }
-            calculateTotal(true);
+            for (const month in dataByMonth) {
+                const monthData = dataByMonth[month];
+                const finalExpensesArray = Object.keys(monthData.expenses).map(categoryName => {
+                    return {
+                        name: categoryName,
+                        items: monthData.expenses[categoryName].items,
+                        progress: monthData.expenses[categoryName].progress
+                    };
+                });
+                const dataToStore = {
+                    incomes: monthData.incomes,
+                    expenses: finalExpensesArray
+                };
+                localStorage.setItem(`budget-${month}`, JSON.stringify(dataToStore));
+            }
+            alert('Данные были успешно импортированы!');
+            const firstMonth = Object.keys(dataByMonth)[0];
+            if (firstMonth) {
+                monthPicker.value = firstMonth;
+            }
+            loadMonthData();
         };
-        reader.onerror = () => alert('Ошибка при чтении файла.'); reader.readAsText(file); event.target.value = '';
+        reader.onerror = () => alert('Ошибка при чтении файла.'); 
+        reader.readAsText(file, 'UTF-8'); 
+        event.target.value = '';
     }
 
     function exportToCSV() {
-        const data = getCurrentDataAsObject();
-        let csvContent = '"Тип";"Категория";"Статья";"Сумма"\n';
-        data.incomes.forEach(item => { csvContent += `"Доход";"";"${item.name}";"${item.amount || 0}"\n`; });
-        data.expenses.forEach(category => {
-            category.items.forEach(item => { csvContent += `"Расход";"${category.name}";"${item.name}";"${item.amount || 0}"\n`; });
-        });
+        let csvContent = '"Месяц";"Тип";"Категория";"Статья";"Сумма"\n';
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key.startsWith('budget-')) {
+                const month = key.replace('budget-', '');
+                const data = JSON.parse(localStorage.getItem(key));
+                if (data.incomes) {
+                    data.incomes.forEach(item => {
+                        csvContent += `"${month}";"Доход";"";"${item.name || ''}";"${item.amount || 0}"\n`;
+                    });
+                }
+                if (data.expenses) {
+                    data.expenses.forEach(category => {
+                        if (category.items) {
+                            category.items.forEach(item => {
+                                csvContent += `"${month}";"Расход";"${category.name || ''}";"${item.name || ''}";"${item.amount || 0}"\n`;
+                            });
+                        }
+                        const progress = parseInt(category.progress) || 0;
+                        if (progress > 0) {
+                            csvContent += `"${month}";"Трата";"${category.name || ''}";"";"${progress}"\n`;
+                        }
+                    });
+                }
+            }
+        }
         const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.setAttribute("href", URL.createObjectURL(blob));
-        link.setAttribute("download", `budget-${monthPicker.value}.csv`);
-        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        link.setAttribute("download", `full_budget_export.csv`);
+        document.body.appendChild(link); 
+        link.click(); 
+        document.body.removeChild(link);
     }
 
     function triggerCsvUpload() { document.getElementById('csvFileInput').click(); }
